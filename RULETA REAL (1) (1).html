@@ -1,0 +1,280 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .wrapper {
+    background: #0d0d0d;
+    border-radius: 20px;
+    padding: 28px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 18px;
+  }
+  .r-logo {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #D6006B;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; color: #fff;
+    font-family: Georgia, serif;
+    flex-shrink: 0;
+  }
+  .headline { flex: 1; text-align: center; padding: 0 12px; }
+  .headline .tag { font-size: 10px; letter-spacing: 0.2em; color: #D6006B; text-transform: uppercase; font-weight: 500; }
+  .headline .title { font-size: 19px; font-weight: 700; color: #fff; line-height: 1.15; letter-spacing: 0.02em; }
+  .headline .title span { color: #D6006B; }
+  .ripley-word { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; color: #555; text-transform: uppercase; flex-shrink: 0; }
+  .insight-strip {
+    background: #D6006B;
+    border-radius: 999px;
+    padding: 6px 20px;
+    font-size: 11px; font-weight: 600; color: #fff;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 22px;
+  }
+  .wheel-area {
+    position: relative;
+    width: 320px; height: 320px;
+    margin-bottom: 6px;
+  }
+  .needle-wrap {
+    position: absolute;
+    top: -18px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .needle-tri {
+    width: 0; height: 0;
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    border-top: 26px solid #D6006B;
+  }
+  .needle-base {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #D6006B; margin-top: -2px;
+  }
+  .center-hub {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: #0d0d0d;
+    border: 3px solid #D6006B;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 30;
+    pointer-events: none;
+  }
+  .hub-r { font-size: 18px; font-weight: 700; color: #D6006B; font-family: Georgia, serif; line-height: 1; }
+  .hub-sub { font-size: 7px; color: #888; letter-spacing: 0.1em; text-transform: uppercase; }
+  .spin-btn {
+    margin-top: 20px;
+    background: #D6006B; color: #fff; border: none;
+    padding: 14px 52px; font-size: 15px; font-weight: 700;
+    border-radius: 999px; cursor: pointer;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .spin-btn:hover { background: #B5005A; }
+  .spin-btn:active { transform: scale(0.97); }
+  .spin-btn:disabled { background: #444; color: #777; cursor: not-allowed; }
+  .result-area {
+    margin-top: 16px; min-height: 64px; text-align: center;
+    opacity: 0; transition: opacity 0.5s; width: 100%;
+  }
+  .result-area.show { opacity: 1; }
+  .result-label { font-size: 11px; letter-spacing: 0.18em; color: #888; text-transform: uppercase; margin-bottom: 4px; }
+  .result-prize { font-size: 20px; font-weight: 700; color: #D6006B; line-height: 1.2; }
+  .result-desc { font-size: 12px; color: #aaa; margin-top: 4px; }
+  .fine-print { font-size: 9px; color: #444; text-align: center; margin-top: 18px; letter-spacing: 0.05em; }
+</style>
+
+<div class="wrapper">
+  <div class="top-bar">
+    <div class="r-logo">R</div>
+    <div class="headline">
+      <div class="tag">La campaña que te ve</div>
+      <div class="title">ME FASCINA<br><span>VERME REAL</span></div>
+    </div>
+    <div class="ripley-word">Ripley</div>
+  </div>
+  <div class="insight-strip">Gira y gana por ser tú misma ✦</div>
+  <div class="wheel-area">
+    <div class="needle-wrap">
+      <div class="needle-tri"></div>
+      <div class="needle-base"></div>
+    </div>
+    <canvas id="ruletaCanvas" width="320" height="320" style="border-radius:50%; display:block;"></canvas>
+    <div class="center-hub">
+      <div class="hub-r">R</div>
+      <div class="hub-sub">Ripley</div>
+    </div>
+  </div>
+  <button class="spin-btn" id="spinBtn" onclick="spinWheel()">¡Gira!</button>
+  <div class="result-area" id="resultArea">
+    <div class="result-label">Tu premio</div>
+    <div class="result-prize" id="resultPrize"></div>
+    <div class="result-desc" id="resultDesc"></div>
+  </div>
+  <div class="fine-print">Válido en tiendas Ripley participantes · Una vez por visita · No acumulable con otras promociones</div>
+</div>
+
+<script>
+// Segments defined in ORDER they will be drawn (clockwise from angle 0)
+const segments = [
+  { label: "20% OFF",             sub: "Sin filtros, sin límites",      icon: "20%", dark: false },
+  { label: "Premio por ser tú",   sub: "Sorpresa especial en caja",     icon: "✦",   dark: true  },
+  { label: "Vale outfit real",    sub: "Para un día sin poses",         icon: "◈",   dark: false },
+  { label: "¡Gira de nuevo!",     sub: "La vida te da otra oportunidad",icon: "↻",   dark: true  },
+  { label: "15% OFF",             sub: "Por no usar filtros",           icon: "15%", dark: false },
+  { label: "Envío gratis",        sub: "Tu look, a tu puerta",          icon: "→",   dark: true  },
+  { label: "2x1 accesorio",       sub: "Comparte lo real contigo",      icon: "◆",   dark: false },
+  { label: "10% OFF",             sub: "Descuento real, para ti",       icon: "10%", dark: true  },
+];
+
+const NUM = segments.length;
+const ARC = (2 * Math.PI) / NUM;  // arc per segment in radians
+const CX = 160, CY = 160, R = 154;
+
+const FUCHSIA = "#D6006B";
+const DARK    = "#1a1a1a";
+
+const canvas = document.getElementById("ruletaCanvas");
+const ctx    = canvas.getContext("2d");
+
+// The needle points straight UP → angle = -π/2 in canvas coords.
+// We keep track of how much the wheel has rotated (wheelAngle).
+// Segment i occupies [i*ARC, (i+1)*ARC] in the WHEEL's local frame.
+// The segment under the needle is the one whose midpoint aligns with -π/2
+// after applying wheelAngle.
+let wheelAngle = 0;   // total rotation of the wheel (radians, cumulative)
+let spinning   = false;
+
+function drawWheel(angle) {
+  ctx.clearRect(0, 0, 320, 320);
+
+  for (let i = 0; i < NUM; i++) {
+    const start = angle + i * ARC;
+    const end   = angle + (i + 1) * ARC;
+    const mid   = angle + i * ARC + ARC / 2;
+    const seg   = segments[i];
+    const bgCol = seg.dark ? DARK : FUCHSIA;
+    const fgCol = seg.dark ? FUCHSIA : "#fff";
+
+    // Draw slice
+    ctx.beginPath();
+    ctx.moveTo(CX, CY);
+    ctx.arc(CX, CY, R, start, end);
+    ctx.closePath();
+    ctx.fillStyle = bgCol;
+    ctx.fill();
+    ctx.strokeStyle = "#0d0d0d";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw text rotated to the midpoint angle
+    ctx.save();
+    ctx.translate(CX + Math.cos(mid) * R * 0.62, CY + Math.sin(mid) * R * 0.62);
+    ctx.rotate(mid + Math.PI / 2);
+    ctx.textAlign = "center";
+    ctx.fillStyle = fgCol;
+
+    // Icon
+    ctx.font = "bold 14px sans-serif";
+    ctx.fillText(seg.icon, 0, -20);
+
+    // Label (split into max 2 lines)
+    ctx.font = "600 10px sans-serif";
+    const words = seg.label.split(" ");
+    if (words.length <= 2) {
+      ctx.fillText(seg.label, 0, -4);
+    } else {
+      const half = Math.ceil(words.length / 2);
+      ctx.fillText(words.slice(0, half).join(" "), 0, -6);
+      ctx.fillText(words.slice(half).join(" "),    0,  6);
+    }
+
+    ctx.restore();
+  }
+
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(CX, CY, R, 0, 2 * Math.PI);
+  ctx.strokeStyle = FUCHSIA;
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(CX, CY, R - 6, 0, 2 * Math.PI);
+  ctx.strokeStyle = "rgba(214,0,107,0.18)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function getWinnerIndex(finalAngle) {
+  // The needle is at canvas angle = -π/2 (pointing up).
+  // A segment i covers [i*ARC, (i+1)*ARC] in the wheel's LOCAL frame.
+  // After rotation by finalAngle, segment i occupies
+  //   [finalAngle + i*ARC,  finalAngle + (i+1)*ARC]  in CANVAS frame.
+  // We need the segment whose range contains -π/2.
+  // Equivalent: find i such that  (-π/2 - finalAngle) mod 2π  ∈ [i*ARC, (i+1)*ARC)
+
+  const needleLocal = ((-Math.PI / 2 - finalAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+  return Math.floor(needleLocal / ARC) % NUM;
+}
+
+function spinWheel() {
+  if (spinning) return;
+  spinning = true;
+  document.getElementById("spinBtn").disabled = true;
+  const ra = document.getElementById("resultArea");
+  ra.classList.remove("show");
+
+  // Random full rotations (5–10) plus a random extra angle
+  const fullRotations = (5 + Math.floor(Math.random() * 6)) * 2 * Math.PI;
+  const extraAngle    = Math.random() * 2 * Math.PI;
+  const totalDelta    = fullRotations + extraAngle;
+
+  const duration = 4200;
+  const t0       = performance.now();
+  const a0       = wheelAngle;
+
+  function ease(t) { return 1 - Math.pow(1 - t, 4); }
+
+  function frame(now) {
+    const p = Math.min((now - t0) / duration, 1);
+    wheelAngle = a0 + totalDelta * ease(p);
+    drawWheel(wheelAngle);
+
+    if (p < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      spinning = false;
+      document.getElementById("spinBtn").disabled = false;
+      showResult();
+    }
+  }
+
+  requestAnimationFrame(frame);
+}
+
+function showResult() {
+  const idx = getWinnerIndex(wheelAngle);
+  const seg = segments[idx];
+  document.getElementById("resultPrize").textContent = seg.label;
+  document.getElementById("resultDesc").textContent  = seg.sub;
+  document.getElementById("resultArea").classList.add("show");
+}
+
+// Initial draw — needle starts aligned to segment 0 for a clean visual
+drawWheel(wheelAngle);
+</script>
